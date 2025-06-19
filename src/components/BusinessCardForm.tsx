@@ -9,6 +9,10 @@ import {
   Building2,
   Download,
   ExternalLink,
+  User,
+  Briefcase,
+  Smartphone,
+  Globe,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -26,10 +30,14 @@ import {
 } from "@/lib/validation";
 import { supabase } from "@/lib/supbase";
 
+// Import your company logo
+import CompanyLogo from "@/assets/Infimatrix-Logo-2.png";
+
 export function BusinessCardForm() {
   const [qrValue, setQrValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [cardData, setCardData] = useState<BusinessCardFormData | null>(null);
+  const [activeStep, setActiveStep] = useState<"form" | "preview">("form");
 
   const {
     register,
@@ -69,6 +77,7 @@ export function BusinessCardForm() {
       const cardUrl = `${window.location.origin}/card/${profile.id}`;
       setQrValue(cardUrl);
       setCardData(data);
+      setActiveStep("preview");
 
       // 3. Save QR code to Supabase storage
       const canvas = document.getElementById("qr-code") as HTMLCanvasElement;
@@ -119,199 +128,399 @@ export function BusinessCardForm() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">
-        E-Business Card Generator
-      </h1>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              placeholder="John Doe"
-              {...register("fullName")}
-            />
-            {errors.fullName && (
-              <p className="text-sm text-red-500">{errors.fullName.message}</p>
-            )}
+    <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-400 rounded-2xl shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-white/10 backdrop-blur-sm p-6 text-center">
+          <div className="flex justify-center mb-4">
+            <img src={CompanyLogo} alt="Infimatrix" className="h-10" />
           </div>
+          <h1 className="text-3xl font-bold text-white">
+            Employee Digital Business Card Generator
+          </h1>
+          <p className="text-white/80 mt-2">
+            Create your professional digital identity in seconds
+          </p>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="designation">Designation</Label>
-            <Input
-              id="designation"
-              placeholder="Software Engineer"
-              {...register("designation")}
-            />
-            {errors.designation && (
-              <p className="text-sm text-red-500">
-                {errors.designation.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="john@infimatrix.com"
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Select
-              value={department}
-              onValueChange={(value) => setValue("department", value)}
+        {/* Progress Steps */}
+        <div className="flex justify-center mt-6 pb-6">
+          <div className="flex items-center">
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                activeStep === "form"
+                  ? "bg-white text-blue-600"
+                  : "bg-white/20 text-white"
+              } font-semibold`}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Engineering">Engineering</SelectItem>
-                <SelectItem value="Marketing">Marketing</SelectItem>
-                <SelectItem value="Sales">Sales</SelectItem>
-                <SelectItem value="HR">Human Resources</SelectItem>
-                <SelectItem value="Finance">Finance</SelectItem>
-                <SelectItem value="Operations">Operations</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.department && (
-              <p className="text-sm text-red-500">
-                {errors.department.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="linkedin">LinkedIn URL</Label>
-            <Input
-              id="linkedin"
-              placeholder="https://linkedin.com/in/username"
-              {...register("linkedin")}
-            />
-            {errors.linkedin && (
-              <p className="text-sm text-red-500">{errors.linkedin.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number (optional)</Label>
-            <Input
-              id="phone"
-              placeholder="+91 9876543210"
-              {...register("phone")}
-            />
-            {errors.phone && (
-              <p className="text-sm text-red-500">{errors.phone.message}</p>
-            )}
-          </div>
-        </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Generating..." : "Generate E-Business Card"}
-        </Button>
-      </form>
-
-      {qrValue && cardData && (
-        <div className="mt-8 p-6 border rounded-lg bg-gray-50">
-          <h2 className="text-xl font-semibold mb-4 text-center">
-            Your E-Business Card
-          </h2>
-          <div className="flex flex-col items-center">
-            <div className="bg-white p-4 rounded-lg mb-4">
-              <QRCodeSVG
-                id="qr-code"
-                value={qrValue}
-                size={256}
-                level="H"
-                includeMargin={true}
-                fgColor="#2563eb"
-                bgColor="#ffffff"
-              />
+              1
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Scan this QR code to view your digital business card
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={downloadQRCode}>
-                <Download className="mr-2 h-4 w-4" />
-                Download QR Code
-              </Button>
-              <Button variant="outline" asChild>
-                <a href={qrValue} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View Card
-                </a>
-              </Button>
-            </div>
-          </div>
-
-          {/* Card Preview */}
-          <div className="mt-8 p-6 bg-white rounded-lg shadow-sm border">
-            <h3 className="text-lg font-medium mb-4">Card Preview</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <Mail className="h-5 w-5 text-blue-600" />
-                </div>
-                <a
-                  href={`mailto:${cardData.email}`}
-                  className="text-gray-700 hover:text-blue-600"
-                >
-                  {cardData.email}
-                </a>
-              </div>
-
-              {cardData.phone && (
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <Phone className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <a
-                    href={`tel:${cardData.phone}`}
-                    className="text-gray-700 hover:text-blue-600"
-                  >
-                    {cardData.phone}
-                  </a>
-                </div>
-              )}
-
-              {cardData.linkedin && (
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <Linkedin className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <a
-                    href={cardData.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-700 hover:text-blue-600"
-                  >
-                    LinkedIn Profile
-                  </a>
-                </div>
-              )}
-
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <Building2 className="h-5 w-5 text-blue-600" />
-                </div>
-                <span className="text-gray-700">
-                  Infimatrix • {cardData.department}
-                </span>
-              </div>
+            <div
+              className={`w-16 h-1 ${
+                activeStep === "form" ? "bg-white/30" : "bg-white"
+              }`}
+            ></div>
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                activeStep === "preview"
+                  ? "bg-white text-blue-600"
+                  : "bg-white/20 text-white"
+              } font-semibold`}
+            >
+              2
             </div>
           </div>
         </div>
-      )}
+
+        {/* Form Content */}
+        <div className="p-6 md:p-8 bg-white">
+          {activeStep === "form" ? (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="fullName"
+                    className="flex items-center gap-2 text-gray-600"
+                  >
+                    <User className="h-4 w-4" />
+                    Full Name
+                  </Label>
+                  <Input
+                    id="fullName"
+                    placeholder="John Doe"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-blue-500"
+                    {...register("fullName")}
+                  />
+                  {errors.fullName && (
+                    <p className="text-sm text-red-500">
+                      {errors.fullName.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Designation */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="designation"
+                    className="flex items-center gap-2 text-gray-600"
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    Designation
+                  </Label>
+                  <Input
+                    id="designation"
+                    placeholder="Software Engineer"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-blue-500"
+                    {...register("designation")}
+                  />
+                  {errors.designation && (
+                    <p className="text-sm text-red-500">
+                      {errors.designation.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="email"
+                    className="flex items-center gap-2 text-gray-600"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john@infimatrix.com"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-blue-500"
+                    {...register("email")}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-red-500">
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Department */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="department"
+                    className="flex items-center gap-2 text-gray-600"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    Department
+                  </Label>
+                  <Select
+                    value={department}
+                    onValueChange={(value) => setValue("department", value)}
+                  >
+                    <SelectTrigger className="bg-gray-50 border-gray-200 w-full focus:ring-blue-500">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Engineering">Engineering</SelectItem>
+                      <SelectItem value="Marketing">Marketing</SelectItem>
+                      <SelectItem value="Sales">Sales</SelectItem>
+                      <SelectItem value="HR">Human Resources</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Operations">Operations</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.department && (
+                    <p className="text-sm text-red-500">
+                      {errors.department.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* LinkedIn */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="linkedin"
+                    className="flex items-center gap-2 text-gray-600"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn URL
+                  </Label>
+                  <Input
+                    id="linkedin"
+                    placeholder="https://linkedin.com/in/username"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-blue-500"
+                    {...register("linkedin")}
+                  />
+                  {errors.linkedin && (
+                    <p className="text-sm text-red-500">
+                      {errors.linkedin.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="phone"
+                    className="flex items-center gap-2 text-gray-600"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    Phone Number (optional)
+                  </Label>
+                  <Input
+                    id="phone"
+                    placeholder="+91 9876543210"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-blue-500"
+                    {...register("phone")}
+                  />
+                  {errors.phone && (
+                    <p className="text-sm text-red-500">
+                      {errors.phone.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Generating...
+                  </span>
+                ) : (
+                  "Generate Digital Card"
+                )}
+              </Button>
+            </form>
+          ) : (
+            /* Preview Section */
+            qrValue &&
+            cardData && (
+              <div className="space-y-8">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Your Digital Business Card
+                  </h2>
+                  <p className="text-gray-600 mt-2">
+                    Scan the QR code or share the link below
+                  </p>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
+                  {/* QR Code */}
+                  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
+                    <QRCodeSVG
+                      id="qr-code"
+                      value={qrValue}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                      fgColor="#2563eb"
+                      bgColor="#ffffff"
+                    />
+                    <p className="mt-4 text-sm text-gray-500">
+                      Scan to save contact
+                    </p>
+                  </div>
+
+                  {/* Card Preview */}
+                  <div className="relative bg-white p-8 rounded-xl border border-gray-200 shadow-sm w-full max-w-md">
+                    {/* Company Logo Watermark */}
+                    <div className="absolute bottom-4 right-4 opacity-10">
+                      <img
+                        src={CompanyLogo}
+                        alt="Infimatrix"
+                        className="h-24"
+                      />
+                    </div>
+
+                    {/* Employee Info */}
+                    <div className="relative z-10">
+                      <div className="mb-6">
+                        <h3 className="text-2xl font-bold text-gray-900">
+                          {cardData.fullName}
+                        </h3>
+                        <p className="text-blue-600 font-medium">
+                          {cardData.designation}
+                        </p>
+                        <div className="mt-2 inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                          {cardData.department}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4">
+                          <div className="bg-blue-100 p-2 rounded-lg mt-0.5">
+                            <Mail className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </p>
+                            <a
+                              href={`mailto:${cardData.email}`}
+                              className="text-sm text-gray-800 hover:text-blue-600"
+                            >
+                              {cardData.email}
+                            </a>
+                          </div>
+                        </div>
+
+                        {cardData.phone && (
+                          <div className="flex items-start gap-4">
+                            <div className="bg-blue-100 p-2 rounded-lg mt-0.5">
+                              <Phone className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Phone
+                              </p>
+                              <a
+                                href={`tel:${cardData.phone}`}
+                                className="text-sm text-gray-800 hover:text-blue-600"
+                              >
+                                {cardData.phone}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {cardData.linkedin && (
+                          <div className="flex items-start gap-4">
+                            <div className="bg-blue-100 p-2 rounded-lg mt-0.5">
+                              <Linkedin className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                LinkedIn
+                              </p>
+                              <a
+                                href={cardData.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-gray-800 hover:text-blue-600 break-all"
+                              >
+                                {cardData.linkedin.replace(
+                                  /^https?:\/\/(www\.)?/,
+                                  ""
+                                )}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-start gap-4">
+                          <div className="bg-blue-100 p-2 rounded-lg mt-0.5">
+                            <Building2 className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Company
+                            </p>
+                            <p className="text-sm text-gray-800">
+                              Infimatrix Technologies
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={downloadQRCode}
+                    variant="outline"
+                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download QR Code
+                  </Button>
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                  >
+                    <a href={qrValue} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View Digital Card
+                    </a>
+                  </Button>
+                </div>
+
+                <div className="text-center text-sm text-gray-500 mt-4">
+                  <p>Your card is automatically saved to your profile.</p>
+                  <p>Share the QR code or link with your contacts.</p>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }
