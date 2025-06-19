@@ -12,6 +12,7 @@ import {
   User,
   Briefcase,
   Smartphone,
+  Share2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -122,7 +123,24 @@ export function BusinessCardForm() {
       setIsLoading(false);
     }
   };
-
+  const shareBusinessCard = async () => {
+    try {
+      if (navigator.share) {
+        // Use the Web Share API if available
+        await navigator.share({
+          title: `${cardData?.fullName}'s Digital Business Card`,
+          text: `Connect with ${cardData?.fullName}, ${cardData?.designation} at Infimatrix Technologies`,
+          url: qrValue,
+        });
+      } else {
+        // Fallback for browsers that don't support the Web Share API
+        await navigator.clipboard.writeText(qrValue);
+        alert("Link copied to clipboard!");
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
   const downloadQRCode = () => {
     const svgElement = qrCodeRef.current?.querySelector("svg");
     if (!svgElement) return;
@@ -527,6 +545,14 @@ export function BusinessCardForm() {
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Digital Card
                     </a>
+                  </Button>
+                  <Button
+                    onClick={shareBusinessCard}
+                    variant="outline"
+                    className="border-blue-500 cursor-pointer text-blue-600 hover:bg-blue-50"
+                  >
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share Card
                   </Button>
                 </div>
 
