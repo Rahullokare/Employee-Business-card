@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { QRCodeSVG } from "qrcode.react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Mail,
   Phone,
@@ -30,13 +30,13 @@ import {
 import { supabase } from "@/lib/supbase";
 
 // Import your company logo
-import CompanyLogo from "@/assets/Infimatrix-Logo-2.png";
 
 export function BusinessCardForm() {
   const [qrValue, setQrValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [cardData, setCardData] = useState<BusinessCardFormData | null>(null);
   const [activeStep, setActiveStep] = useState<"form" | "preview">("form");
+  const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -56,7 +56,6 @@ export function BusinessCardForm() {
   const onSubmit = async (data: BusinessCardFormData) => {
     setIsLoading(true);
     try {
-      // 1. Save profile to Supabase
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .upsert({
@@ -72,18 +71,26 @@ export function BusinessCardForm() {
 
       if (profileError) throw profileError;
 
-      // 2. Generate card URL
       const cardUrl = `${window.location.origin}/card/${profile.id}`;
       setQrValue(cardUrl);
       setCardData(data);
       setActiveStep("preview");
 
-      // 3. Save QR code to Supabase storage
-      const canvas = document.getElementById("qr-code") as HTMLCanvasElement;
-      const qrCodeDataUrl = canvas?.toDataURL("image/png");
+      const svgElement = qrCodeRef.current?.querySelector("svg");
+      if (!svgElement) throw new Error("QR code SVG not found");
 
-      if (qrCodeDataUrl) {
-        const qrCodeBlob = await fetch(qrCodeDataUrl).then((res) => res.blob());
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        const pngDataUrl = canvas.toDataURL("image/png");
+
+        const qrCodeBlob = await fetch(pngDataUrl).then((res) => res.blob());
         const qrCodeFileName = `qr-${profile.id}.png`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -106,7 +113,9 @@ export function BusinessCardForm() {
           qr_code_url: urlData.publicUrl,
           card_url: cardUrl,
         });
-      }
+      };
+
+      img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -115,16 +124,29 @@ export function BusinessCardForm() {
   };
 
   const downloadQRCode = () => {
-    const canvas = document.getElementById("qr-code") as HTMLCanvasElement;
-    const pngUrl = canvas?.toDataURL("image/png");
-    if (pngUrl) {
+    const svgElement = qrCodeRef.current?.querySelector("svg");
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngDataUrl = canvas.toDataURL("image/png");
+
       const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
+      downloadLink.href = pngDataUrl;
       downloadLink.download = "infimatrix-business-card.png";
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
-    }
+    };
+
+    img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
   };
 
   return (
@@ -323,7 +345,7 @@ export function BusinessCardForm() {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                className="w-full cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -371,7 +393,10 @@ export function BusinessCardForm() {
 
                 <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
                   {/* QR Code */}
-                  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
+                  <div
+                    ref={qrCodeRef}
+                    className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center"
+                  >
                     <QRCodeSVG
                       id="qr-code"
                       value={qrValue}
@@ -382,20 +407,13 @@ export function BusinessCardForm() {
                       bgColor="#ffffff"
                     />
                     <p className="mt-4 text-sm text-gray-500">
-                      Scan to save contact
+                      Scan the QR code with your mobile device
                     </p>
                   </div>
 
                   {/* Card Preview */}
                   <div className="relative bg-white p-8 rounded-xl border border-gray-200 shadow-sm w-full max-w-md">
                     {/* Company Logo Watermark */}
-                    <div className="absolute bottom-4 right-4 opacity-10">
-                      <img
-                        src={CompanyLogo}
-                        alt="Infimatrix"
-                        className="h-24"
-                      />
-                    </div>
 
                     {/* Employee Info */}
                     <div className="relative z-10">
@@ -495,7 +513,7 @@ export function BusinessCardForm() {
                   <Button
                     onClick={downloadQRCode}
                     variant="outline"
-                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                    className="border-blue-500 cursor-pointer text-blue-600 hover:bg-blue-50"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download QR Code
@@ -503,7 +521,7 @@ export function BusinessCardForm() {
                   <Button
                     variant="outline"
                     asChild
-                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                    className="border-blue-500 cursor-pointer text-blue-600 hover:bg-blue-50"
                   >
                     <a href={qrValue} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
